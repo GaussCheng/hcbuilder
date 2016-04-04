@@ -1,60 +1,51 @@
 var express = require('express');
-var path = require('path');
-var favicon = require('serve-favicon');
-var logger = require('morgan');
-var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
-
-var routes = require('./routes/index');
-var users = require('./routes/users');
-
+var multiparty = require('multiparty');
+var util = require('util');
+var fs = require('fs');
+var exec = require('child_process').exec; 
 var app = express();
+app.locals.title = "HCBuilder"
+app.locals.email = "GaussCheng@live.com"
+app.use(express.static('public'));
 
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
-
-// uncomment after placing your favicon in /public
-//app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
-app.use(logger('dev'));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
-
-app.use('/', routes);
-app.use('/users', users);
-
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  var err = new Error('Not Found');
-  err.status = 404;
-  next(err);
+app.get('/', function (req, res) {
+  res.sendFile('/public/index.html');
 });
+app.post('/startToBuild', function(req, res){
+    var form = new multiparty.Form({uploadDir: './public/files/'});
+    form.parse(req, function(err, fields, files){
+	var filesTmp = JSON.stringify(files,null,2);
+	if(err){
+	    console.log('parse error: ' + err);
+	} else {
+	    console.log('parse files: ' + filesTmp);
+	    var inputFile = files.inputFile[0];
+	    var uploadedPath = inputFile.path;
+	    var dstPath = './public/files/' + inputFile.originalFilename;
+	    //重命名为真实文件名
+	    fs.rename(uploadedPath, dstPath, function(err) {
+		if(err){
+		    console.log('rename error: ' + err);
+		} else {
+		    console.log('rename ok');
+		}
+	    });
+	}
+	exec("ls", function(err, stdout, stderr){
 
-// error handlers
+	    console.log(stdout);
+	});
 
-// development error handler
-// will print stacktrace
-if (app.get('env') === 'development') {
-  app.use(function(err, req, res, next) {
-    res.status(err.status || 500);
-    res.render('error', {
-      message: err.message,
-      error: err
+	res.writeHead(200, {'content-type': 'text/plain;charset=utf-8'});
+	res.write('received upload:\n\n');
+	res.end(util.inspect({fields: fields, files: filesTmp}));
     });
-  });
-}
-
-// production error handler
-// no stacktraces leaked to user
-app.use(function(err, req, res, next) {
-  res.status(err.status || 500);
-  res.render('error', {
-    message: err.message,
-    error: {}
-  });
 });
 
 
-module.exports = app;
+var server = app.listen(3000, function () {
+  var host = server.address().address;
+  var port = server.address().port;
+
+  console.log('Example app listening at http://%s:%s', host, port);
+});

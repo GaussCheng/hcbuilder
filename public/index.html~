@@ -1,0 +1,6 @@
+<html>
+  <body>
+    <h1>欢迎使用华成自助编译系统</h1>
+    <input placeholder = "请上传编译宏文件">
+  </body>
+</html>
