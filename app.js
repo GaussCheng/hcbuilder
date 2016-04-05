@@ -31,10 +31,30 @@ app.post('/startToBuild', function(req, res){
 		}
 	    });
 	}
-	exec("ls", function(err, stdout, stderr){
-
-	    console.log(stdout);
-	});
+    
+    fs.readFile(dstPath, 'ascii', function(err, defines){
+        if(!err){
+            fs.readFile('/home/szhc/workspace_v6_0/Easy6/basemf', 'ascii', function(err, data){
+                if(!err){
+                    
+                    var toReplaceBegin = data.indexOf("Easy6.out: $(OBJS) $(CMD_SRCS) $(LIB_SRCS) $(GEN_CMDS)");
+                    var toReplaceEnd = data.indexOf("Easy6.hex", toReplaceBegin) - 1;
+                    var header = data.substr(0, toReplaceBegin);
+                    var end = data.substr(toReplaceEnd);
+                    var toRepaceContent = 'Easy6.out: $(OBJS) $(CMD_SRCS) $(LIB_SRCS) $(GEN_CMDS)\n' +
+                                           "@echo 'Building target: $@'\n" +
+                                           "@echo 'Invoking: C2000 Linker'\n" +
+            '"/opt/ti/ccsv6/tools/compiler/c2000_6.2.7/bin/cl2000" -v28 -ml -mt --float_support=fpu32 -g --diag_warning=225 --display_error_number --diag_wrap=off --c_extension=.C -z -m"Easy6.map" --stack_size=0x300 --warn_sections -i"/opt/ti/ccsv6/tools/compiler/c2000_6.2.7/lib" -i"/opt/ti/ccsv6/tools/compiler/c2000_6.2.7/include" --reread_libs --display_error_number --diag_wrap=off --xml_link_info="Easy6_linkInfo.xml" --entry_point=code_start --rom_model' +
+                        '-o "Easy6.out" $(ORDERED_OBJS)\n' +
+                                           "@echo 'Finished building target: $@'\n" +
+                                           "@echo ' '\n" +
+                                           "@$(MAKE) --no-print-directory post-build"
+                    console.log(header, end);
+                }
+            });
+        }
+    });
+    
 
 	res.writeHead(200, {'content-type': 'text/plain;charset=utf-8'});
 	res.write('received upload:\n\n');
